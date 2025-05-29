@@ -210,25 +210,29 @@ class SearchApp(QWidget):
                     self.results_output.append("")
                     QApplication.processEvents()
 
-                if task_key == 'highlight':
-                    self.results_output.insertHtml(f'<b> Higlighting Rows ... </b>')
+                if task_key == 'highlight' or task_key == 'remove':
+                    self.results_output.insertHtml(f'<b> {task_key} Rows ... </b>')
                     QApplication.processEvents()  
                     if temp_path:
-                        trimmer.apply_conditional_formatting(temp_path, self.download_out_input.text(), highlight_mode=True)
+                        trimmer.apply_conditional_formatting(temp_path, self.download_out_input.text(), task=task_key)
                         self.results_output.insertHtml('<b><font color = "green"> DONE </font></b>')
                         self.results_output.append("")
                         QApplication.processEvents()
                     elif not temp_path:
                         try:
-                            trimmer.apply_conditional_formatting(self.download_in_input.text(), )
-                    
+                            self.results_output.insertHtml('<b><font color = "red"> FAILED </font></b>')
+                            self.results_output.append("")
+                            self.results_output.insertHtml('<b><font color = "blue"> Couldnt download using conventional methods. Switching to direct download... </font></b>')
+                            QApplication.processEvents()
+                            trimmer.apply_conditional_formatting(self.download_in_input.text(), self.download_out_input.text())
+                        except Exception as e:
+                            self.results_output.insertHtml('<b><font color = "red"> ERROR! Problem applying conditional Formatting </font></b>')
+                            QApplication.processEvents()          
                     else:
+                        self.results_output.insertHtml('<b><font color = "red"> FAILED </font></b>')
                         self.results_output.append("")
-                        self.results_output.insertHTML('<b><font color = "red"> ERROR! No File Path From File Convert </font></b>')
+                        self.results_output.insertHtml('<b><font color = "red"> ERROR! No File Path From File convert. Could not find file destination or lookup </font></b>')
                         QApplication.processEvents()
-
-                if task_key == 'remove':
-                    print('remove things')
         finally:
             self.run_button.setEnabled(True)
 

@@ -1,0 +1,31 @@
+I want you to create the following product: 
+Take a Microsoft Excel 97-2003 Worksheet and perform the following: 
+
+
+1. Delete the top five rows 
+2. Delete the 1st, 3rd, 5th, 6th, 8th, and 10th columns simultaneously (so the columns don't shift and make them delete the wrong columns) 
+3. Remove the values from A1-F2 (after everything has been moved) 
+4. Fill in values of "Customer, Sold-To, Legal Name, Pkg, Platn, PDL" for the columns from A2-F2
+
+//REMOVAL STAGE
+5. Go through the Plant column and highlight all rows red that have the following text anywhere in the string
+ - MEMORY 
+ - SIP 
+ - FPS 
+ - Molded MEMS 
+
+6. Go through same column and highlight rows red that have the following text: 
+ - CABGA
+ - BGA
+ - SCSP 
+
+7. Now go through, and highlight all cells that include the text "test" (either capitalized or uncapitalized" that immediately follow a red highlighted cell. Highlight these yellow. Otherwise highlight green. For example:
+
+MEMORY - red
+TEST - yellow
+Testing - yellow 
+test jp - yellow 
+BGA - green
+test - green
+TEST - green 
+SIP - red

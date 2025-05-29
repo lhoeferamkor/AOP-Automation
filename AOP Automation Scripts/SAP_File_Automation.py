@@ -173,7 +173,7 @@ def convert_mhtml_to_excel(mhtml_file_path, output_excel_path, sheet_name="Sheet
 if __name__ == "__main__":
     input_mhtml_file = "AOP Automation Scripts/input_data/ZANALYSIS_PATTERN.xls" # Replace with your file
     output_directory = "AOP Automation Scripts/output_data"
-    output_excel_file = os.path.join(output_directory, "converted_report.xlsx")
+    output_excel_file = os.path.join(output_directory, "temporary_file.xlsx")
 
     print(f"Input MHTML (or misnamed .xls): {input_mhtml_file}")
     print(f"Output Excel file: {output_excel_file}")

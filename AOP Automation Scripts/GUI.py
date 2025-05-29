@@ -12,7 +12,9 @@ import datetime
 import time
 import random
 import subprocess
+import os 
 
+import SAP_File_Automation as file_reader
 
 
 class SearchApp(QWidget):
@@ -49,10 +51,10 @@ class SearchApp(QWidget):
         self.download_in_input.setText("AOP Automation Scripts/input_data/ZANALYSIS_PATTERN.xls") 
         self.download_in_input.setReadOnly(True) # Make it read-only, changed by button
         download_in_layout.addWidget(self.download_in_input, 1)
-        self.browse_button = QPushButton("...") # Browse button
-        self.browse_button.setFixedWidth(30)
-        self.browse_button.clicked.connect(self.browse_download_file_in)
-        download_in_layout.addWidget(self.browse_button)
+        self.browse_button_in = QPushButton("Select") # Browse button
+        self.browse_button_in.setFixedWidth(80)
+        self.browse_button_in.clicked.connect(self.browse_download_file_in)
+        download_in_layout.addWidget(self.browse_button_in)
         form_layout.addRow(self.download_in_label, download_in_layout)
 
         # --- Select Output File ---
@@ -60,13 +62,14 @@ class SearchApp(QWidget):
         download_out_layout = QHBoxLayout() # For text box and button
         download_out_layout.setSpacing(5)
         self.download_out_input = QLineEdit()
-        self.download_out_input.setText("AOP Automation Scripts/input_data/ZANALYSIS_PATTERN.xls") 
+        self.download_out_input.setText("AOP Automation Scripts/output_data") 
         self.download_out_input.setReadOnly(True) # Make it read-only, changed by button
         download_out_layout.addWidget(self.download_out_input, 1)
-        self.browse_button = QPushButton("...") # Browse button
-        self.browse_button.setFixedWidth(30)
-        self.browse_button.clicked.connect(self.browse_download_file_out)
-        download_out_layout.addWidget(self.browse_button)
+        self.browse_button_out = QPushButton("Select") # Browse button
+        self.browse_button_out.setFixedWidth(80)
+        self.browse_button_out.text
+        self.browse_button_out.clicked.connect(self.browse_download_file_out)
+        download_out_layout.addWidget(self.browse_button_out)
         form_layout.addRow(self.download_out_label, download_out_layout)
         self.input_group.setLayout(form_layout)
         main_layout.addWidget(self.input_group)
@@ -87,6 +90,7 @@ class SearchApp(QWidget):
         progress_v_layout.setSpacing(8) # Spacing between progress bars
 
         task_definitions = [
+            ("convert", "Convert File"),
             ("highlight", "Higlight Rows"),
             ("remove", "Remove Rows"),
         ]
@@ -141,7 +145,7 @@ class SearchApp(QWidget):
         self.run_button = QPushButton('Run Tasks') # Shortened text
         self.run_button.clicked.connect(self.on_run_clicked)
         self.run_button.setFixedHeight(35)
-        self.run_button.setMinimumWidth(100) # Ensure button has decent width
+        self.run_button.setMinimumWidth(200) # Ensure button has decent width
         exec_controls_outer_h_layout.addWidget(self.run_button, 0, Qt.AlignVCenter) # Align button vertically centered
 
         self.execution_controls_group.setLayout(exec_controls_outer_h_layout)
@@ -163,17 +167,15 @@ class SearchApp(QWidget):
     
     def browse_download_file_in(self):
         options = QFileDialog.Options()
-        file = QFileDialog.getOpenFileName(self, "Select a File", "", "All Files (*);;Excel Files (*.xlsx)", options=options)
+        file = QFileDialog.getOpenFileName(self, "Select a File", "", "All Files (*);;Excel Files (*.xls)", options=options)
         if file: # If a directory was selected
             self.download_in_input.setText(file[0])
             QApplication.processEvents()
 
     def browse_download_file_out(self):
-        options = QFileDialog.Options()
-        file = QFileDialog.getOpenFileName(self, "Select a File", "", "All Files (*);;Excel Files (*.xlsx)", options=options)
-        if file: # If a directory was selected
-            self.download_out_input.setText(file[0])
-            QApplication.processEvents()
+        directory = QFileDialog.getExistingDirectory(self, "Select Download Directory", self.download_out_input.text())
+        if directory: # If a directory was selected
+            self.download_out_input.setText(directory)
 
     def update_progress(self, function_key, percentage):
         if function_key in self.function_progress_bars:
@@ -199,9 +201,14 @@ class SearchApp(QWidget):
         try:
             for task_key, task_name_display in selected_tasks:
                 progress_callback_for_task = lambda p, tk=task_key: self.update_progress(tk, p)
-                
+                if task_key == 'convert':
+                    self.results_output.insertHtml(f'<b> Loading File {self.download_in_input.text()} ... </b>')
+                    os.path.join(self.download_out_input.text(), "temporary_file.xlsx")
+                    file_reader.convert_mhtml_to_excel(self.download_in_input.text(), self.download_out_input.text())
+                    self.results_output.insertHtml('<b><font color = "green"> DONE </font></b>')
+
                 if task_key == 'highlight':
-                    print('highlight things') 
+                    print('highlight things')     
                 if task_key == 'remove':
                     print('remove things')
         finally:

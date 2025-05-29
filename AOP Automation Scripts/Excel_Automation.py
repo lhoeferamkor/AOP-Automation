@@ -1,10 +1,11 @@
 import win32com.client
 import os
 import pythoncom # For CoInitialize (sometimes needed in threads or complex scenarios)
+import pandas as pd
 
 # --- Configuration ---
 # Define the column headers to be set in row 2
-NEW_HEADERS = ["Customer", "Sold-To", "Legal Name", "Pkg", "Platn", "PDL"]
+NEW_HEADERS = ["Customer", "Sold-To", "Legal Name", "Pkg", "Plant", "PDL"]
 # Assuming "Platn" is the "Plant" column, which is the 5th column (E)
 PLANT_COLUMN_LETTER = 'E' # After deletions and header setting, this is E2, E3, etc.
 PLANT_COLUMN_INDEX = 5 # 1-based index for Excel, corresponds to 'E'

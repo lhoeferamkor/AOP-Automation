@@ -15,7 +15,7 @@ import subprocess
 import os 
 
 import SAP_File_Automation as file_reader
-
+import remove_specified_rows as trimmer
 
 class SearchApp(QWidget):
     def __init__(self):
@@ -203,12 +203,30 @@ class SearchApp(QWidget):
                 progress_callback_for_task = lambda p, tk=task_key: self.update_progress(tk, p)
                 if task_key == 'convert':
                     self.results_output.insertHtml(f'<b> Loading File {self.download_in_input.text()} ... </b>')
-                    os.path.join(self.download_out_input.text(), "temporary_file.xlsx")
+                    temp_path = os.path.join(self.download_out_input.text(), "temporary_file.xlsx")
+                    QApplication.processEvents()
                     file_reader.convert_mhtml_to_excel(self.download_in_input.text(), self.download_out_input.text())
                     self.results_output.insertHtml('<b><font color = "green"> DONE </font></b>')
+                    self.results_output.append("")
+                    QApplication.processEvents()
 
                 if task_key == 'highlight':
-                    print('highlight things')     
+                    self.results_output.insertHtml(f'<b> Higlighting Rows ... </b>')
+                    QApplication.processEvents()  
+                    if temp_path:
+                        trimmer.apply_conditional_formatting(temp_path, self.download_out_input.text(), highlight_mode=True)
+                        self.results_output.insertHtml('<b><font color = "green"> DONE </font></b>')
+                        self.results_output.append("")
+                        QApplication.processEvents()
+                    elif not temp_path:
+                        try:
+                            trimmer.apply_conditional_formatting(self.download_in_input.text(), )
+                    
+                    else:
+                        self.results_output.append("")
+                        self.results_output.insertHTML('<b><font color = "red"> ERROR! No File Path From File Convert </font></b>')
+                        QApplication.processEvents()
+
                 if task_key == 'remove':
                     print('remove things')
         finally:

@@ -29,7 +29,7 @@ class SearchApp(QWidget):
         self.apply_styles()
 
     def initUI(self):
-        self.setWindowTitle('PCN Search Tool')
+        self.setWindowTitle('AOP Automation')
         self.setGeometry(250, 150, 650, 730) # Adjusted height slightly
 
         main_layout = QVBoxLayout()
@@ -90,9 +90,11 @@ class SearchApp(QWidget):
         progress_v_layout.setSpacing(8) # Spacing between progress bars
 
         task_definitions = [
+            ("download", "Download SAP (Not Yet Functional)"),
             ("convert", "Convert File"),
             ("highlight", "Higlight Rows"),
             ("remove", "Remove Rows"),
+            ("configure", "Configure for Report")
         ]
 
         for key, display_text in task_definitions:
@@ -205,16 +207,17 @@ class SearchApp(QWidget):
                     self.results_output.insertHtml(f'<b> Loading File {self.download_in_input.text()} ... </b>')
                     temp_path = os.path.join(self.download_out_input.text(), "temporary_file.xlsx")
                     QApplication.processEvents()
-                    file_reader.convert_mhtml_to_excel(self.download_in_input.text(), self.download_out_input.text())
+                    file_reader.convert_mhtml_to_excel(self.download_in_input.text(), temp_path)
                     self.results_output.insertHtml('<b><font color = "green"> DONE </font></b>')
                     self.results_output.append("")
                     QApplication.processEvents()
 
                 if task_key == 'highlight' or task_key == 'remove':
-                    self.results_output.insertHtml(f'<b> {task_key} Rows ... </b>')
+                    if task_key == 'highlight': self.results_output.insertHtml(f'<b> Highlighting Rows ... </b>')
+                    if task_key == 'remove': self.results_output.insertHtml(f'<b> Removing Rows ... </b>')
                     QApplication.processEvents()  
                     if temp_path:
-                        trimmer.apply_conditional_formatting(temp_path, self.download_out_input.text(), task=task_key)
+                        trimmer.apply_conditional_formatting(temp_path, os.path.join(self.download_out_input.text(), 'formatted_report.xlsx'), task=task_key)
                         self.results_output.insertHtml('<b><font color = "green"> DONE </font></b>')
                         self.results_output.append("")
                         QApplication.processEvents()
@@ -233,6 +236,15 @@ class SearchApp(QWidget):
                         self.results_output.append("")
                         self.results_output.insertHtml('<b><font color = "red"> ERROR! No File Path From File convert. Could not find file destination or lookup </font></b>')
                         QApplication.processEvents()
+
+                    if task_key == 'remove':
+                        self.results_output.append("")
+                        self.results_output.insertHtml(f'<b> Deleting File {self.download_in_input.text()} ... </b>')
+                        if os.path.exists(temp_path):
+                            os.remove(temp_path)
+                            self.results_output.insertHtml(f'<b> Loading File {self.download_in_input.text()} ... </b>')
+
+
         finally:
             self.run_button.setEnabled(True)
 

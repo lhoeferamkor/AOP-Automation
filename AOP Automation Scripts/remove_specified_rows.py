@@ -108,7 +108,7 @@ def remove_rows(column_name : str, df : pd.DataFrame):
     return remove_index, df 
 
 
-def apply_conditional_formatting(input_excel_path, output_excel_path, task='remove', column_name="Unnamed: 2", sheet_name="CleanedData"):
+def apply_conditional_formatting(input_excel_path, output_excel_path, task='remove', column_name="Unnamed: 2", sheet_name="Sheet1"):
     try:
         df = pd.read_excel(input_excel_path, sheet_name=sheet_name, keep_default_na=False)
     except FileNotFoundError:

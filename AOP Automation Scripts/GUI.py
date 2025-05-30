@@ -7,7 +7,8 @@ from PyQt5.QtWidgets import (
     QToolButton, QSpinBox, QFileDialog
 )
 from PyQt5.QtCore import QDate, Qt, QSize, QDir
-from PyQt5.QtGui import QFont, QTextCursor
+from PyQt5.QtGui import QFont, QTextCursor, QIcon
+
 import datetime
 import time
 import random
@@ -24,6 +25,8 @@ class SearchApp(QWidget):
         self.function_checkboxes = {} # Store checkboxes for easier access
         self.icon_arrow_right = "►" # Placeholder for QIcon(QDir.currentPath() + "/icons/arrow_right.png")
         self.icon_arrow_down = "▼" # Placeholder for QIcon(QDir.currentPath() + "/icons/arrow_down.png")
+        
+        self.setWindowIcon(QIcon("Amkor_icon.png"))
 
         self.initUI()
         self.apply_styles()
@@ -41,7 +44,6 @@ class SearchApp(QWidget):
         form_layout = QFormLayout()
         form_layout.setContentsMargins(10, 25, 10, 10)
         form_layout.setSpacing(8)
-
         
         # --- Select Input File --- 
         self.download_in_label = QLabel("Read File: ")
@@ -201,6 +203,7 @@ class SearchApp(QWidget):
 
         self.run_button.setEnabled(False)
         try:
+            temp_path = None
             for task_key, task_name_display in selected_tasks:
                 progress_callback_for_task = lambda p, tk=task_key: self.update_progress(tk, p)
                 if task_key == 'convert':
@@ -211,6 +214,7 @@ class SearchApp(QWidget):
                     self.results_output.insertHtml('<b><font color = "green"> DONE </font></b>')
                     self.results_output.append("")
                     QApplication.processEvents()
+                    
 
                 if task_key == 'highlight' or task_key == 'remove':
                     if task_key == 'highlight': self.results_output.insertHtml(f'<b> Highlighting Rows ... </b>')
@@ -227,7 +231,7 @@ class SearchApp(QWidget):
                             self.results_output.append("")
                             self.results_output.insertHtml('<b><font color = "blue"> Couldnt download using conventional methods. Switching to direct download... </font></b>')
                             QApplication.processEvents()
-                            trimmer.apply_conditional_formatting(self.download_in_input.text(), self.download_out_input.text())
+                            trimmer.apply_conditional_formatting(self.download_in_input.text(), os.path.join(self.download_out_input.text(), 'formatted_report.xlsx'), sheet_name = task_key)
                         except Exception as e:
                             self.results_output.insertHtml('<b><font color = "red"> ERROR! Problem applying conditional Formatting </font></b>')
                             QApplication.processEvents()          
@@ -240,10 +244,12 @@ class SearchApp(QWidget):
                     if task_key == 'remove':
                         self.results_output.append("")
                         self.results_output.insertHtml(f'<b> Deleting File {self.download_in_input.text()} ... </b>')
+                        QApplication.processEvents()
                         if os.path.exists(temp_path):
                             os.remove(temp_path)
-                            self.results_output.insertHtml(f'<b> Loading File {self.download_in_input.text()} ... </b>')
-
+                            self.results_output.insertHtml('<b><font color = "red"> DONE </font></b>')
+                            QApplication.processEvents()
+                self.function_progress_bars[task_key].setValue(100)
 
         finally:
             self.run_button.setEnabled(True)
@@ -253,7 +259,7 @@ class SearchApp(QWidget):
         GROUP_BOX_CONTENT_BACKGROUND = "#f8faff" # Very light blue
         BORDER_COLOR = "#5c7da8" # Softer blue border
         TITLE_COLOR = "#2c3e50" # Darker, less saturated blue for title
-        PROGRESS_BAR_CHUNK_COLOR = "#27ae60" # A nice green
+        PROGRESS_BAR_CHUNK_COLOR = "#3498db" # A nice blue
         BUTTON_BG_COLOR = "#3498db" # A friendly blue for button
         BUTTON_HOVER_COLOR = "#2980b9"
 
@@ -328,6 +334,7 @@ class SearchApp(QWidget):
                 border-radius: 3px;
                 margin: 1px;
             }}
+
         """)
 
 if __name__ == '__main__':

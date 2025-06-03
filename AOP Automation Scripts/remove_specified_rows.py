@@ -5,6 +5,9 @@ from openpyxl.utils.dataframe import dataframe_to_rows # Efficiently write df to
 import re # For case-insensitive "test" matching
 import os
 
+red_keywords_group = ["MEMORY", "SIP", "FPS", "Molded MEMS"] # Case-sensitive as per examples
+green_keywords_group = ["CABGA", "BGA", "SCSP"]              # Case-sensitive
+
 def highlight_rows(column_name : str, df : pd.DataFrame):
     
     # Define keywords for red highlighting

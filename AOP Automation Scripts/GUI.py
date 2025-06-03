@@ -4,10 +4,11 @@ from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QPushButton, QTextEdit,
     QDateEdit, QGroupBox, QFormLayout,
     QCheckBox, QProgressBar, QSpacerItem, QSizePolicy, 
-    QToolButton, QSpinBox, QFileDialog
+    QToolButton, QSpinBox, QFileDialog, QTabWidget, QTableWidget,
+    QSplitter, QHeaderView
 )
 from PyQt5.QtCore import QDate, Qt, QSize, QDir
-from PyQt5.QtGui import QFont, QTextCursor, QIcon
+from PyQt5.QtGui import QFont, QTextCursor, QIcon, QColor
 
 import datetime
 import time
@@ -34,6 +35,16 @@ class SearchApp(QWidget):
     def initUI(self):
         self.setWindowTitle('AOP Automation')
         self.setGeometry(250, 150, 650, 730) # Adjusted height slightly
+
+        # --- Add QTabWidget at the top ---
+        self.tabs = QTabWidget()
+        self.tabs.setTabPosition(QTabWidget.North)
+
+        # --- Main Tab ---
+        main_tab_widget = QWidget()
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(12)
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(15, 15, 15, 15)
@@ -165,9 +176,105 @@ class SearchApp(QWidget):
         self.results_group.setLayout(results_layout)
         main_layout.addWidget(self.results_group, 1)
 
+        main_tab_widget.setLayout(main_layout)
+        self.tabs.addTab(main_tab_widget, "Main")
 
-        self.setLayout(main_layout)
+        # --- Advanced Settings Tab ---
+        self.advanced_tab_widget = QWidget()
+        self.advanced_layout = QVBoxLayout()
+
+        # --- Advanced Variables - Remove and Keep Criteria 
+        self.advanced_variables_group = QGroupBox("Design Rules")
+        functions_av_group = QVBoxLayout()  # Use QVBoxLayout for full vertical expansion
+
+        # --- Splitter ---
+        splitter = QSplitter(Qt.Horizontal) # Horizontal splitter
+
+        # --- "Remove" Table ---
+        self.remove_table = QTableWidget()
+        self.remove_table.setColumnCount(2)
+        self.remove_table.setHorizontalHeaderLabels(["Product", "PL"])
+        self.setup_table_appearance(self.remove_table, "Remove", QColor(255, 200, 200)) # Light Red
+        self.remove_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # --- "Keep" Table ---
+        self.keep_table = QTableWidget()
+        self.keep_table.setColumnCount(2)
+        self.keep_table.setHorizontalHeaderLabels(["Product", "PL"])
+        self.setup_table_appearance(self.keep_table, "Keep", QColor(200, 255, 200)) # Light Green
+        self.keep_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # Add tables to the splitter
+        splitter.addWidget(self.remove_table)
+        splitter.addWidget(self.keep_table)
+        splitter.setSizes([1, 1])  # Make both tables expand equally
+
+        functions_av_group.addWidget(splitter)
+
+        self.advanced_variables_group.setLayout(functions_av_group)
+        self.advanced_variables_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.advanced_layout.addWidget(self.advanced_variables_group, stretch=1)
+        self.advanced_tab_widget.setLayout(self.advanced_layout)
+        self.tabs.addTab(self.advanced_tab_widget, "Advanced Settings")
+        # --- End of Advanced Variables - Remove and Keep Criteria 
+
+        # Set the main layout for the window to just the tabs
+        window_layout = QVBoxLayout()
+        window_layout.addWidget(self.tabs)
+        self.setLayout(window_layout)
         self.show()
+
+    def setup_table_appearance(self, table: QTableWidget, title: str, header_bg_color: QColor):
+        """Helper function to set up common appearance for tables."""
+        # Style the table itself
+        table.setStyleSheet(f"""
+            QTableWidget {{
+                border: 1px solid #c0c0c0;
+                border-radius: 5px;
+                gridline-color: #dcdcdc;
+                background-color: #ffffff;
+                selection-background-color: #a8d8ff;
+                selection-color: #000000;
+            }}
+            QTableWidget::item {{
+                padding: 5px;
+                border-bottom: 1px solid #e8e8e8;
+                border-right: 1px solid #e8e8e8;
+            }}
+            QTableWidget::item:focus {{
+                 border: 1px solid #5cacee;
+            }}
+            QHeaderView::section:horizontal {{
+                background-color: {header_bg_color.name()}; /* Dynamic color */
+                color: #111111;
+                padding: 6px;
+                border-top-left-radius: 0px;
+                border-top-right-radius: 0px;
+                border-bottom: 2px solid #b0b8c0;
+                border-right: 1px solid #c0c8d0;
+                font-weight: bold;
+            }}
+            QHeaderView::section:horizontal:last {{
+                border-right: 1px solid #b0b8c0;
+            }}
+            QHeaderView::section:vertical {{
+                background-color: #f0f2f4;
+                padding: 5px;
+                border-right: 1px solid #c0c8d0;
+                border-bottom: 1px solid #d0d8e0;
+            }}
+        """)
+
+        # Optional: Make the overall table title (Not a standard QTableWidget feature)
+        # We can achieve a similar effect by using the GroupBox title or adding a QLabel above
+        # For individual header styling (Remove/Keep), we color the QHeaderView::section
+
+        # Make columns stretch to fill available space
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch) # Stretch all columns
+        # header.setSectionResizeMode(0, QHeaderView.Stretch) # Stretch specific column
+        # header.setSectionResizeMode(1, QHeaderView.Interactive) # Let user resize PL
+        table.verticalHeader().setVisible(False)
     
     def browse_download_file_in(self):
         options = QFileDialog.Options()
@@ -274,8 +381,8 @@ class SearchApp(QWidget):
             }}
             QGroupBox {{
                 background-color: {GROUP_BOX_CONTENT_BACKGROUND};
-                border: 1px solid {BORDER_COLOR};
-                border-radius: 6px;
+                border: 2px solid {BORDER_COLOR};
+                border-radius: 12px;
                 margin-top: 14px; /* Adjust for title height */
                 /* Font for content INSIDE QGroupBoxes, if different from QWidget default */
                 font-weight: 600;
@@ -334,6 +441,28 @@ class SearchApp(QWidget):
                 border-radius: 3px;
                 margin: 1px;
             }}
+
+            QTableWidget {{
+                border: 2px solid #000000;
+                gridline-color: #000000;
+                background-color: #eceff1;
+
+                selection-background-color: #000000;
+                selection-color: #000000;
+            }}
+
+            QTableWidget::item {{
+                padding: 5px;                    
+                border: 1px #000000;   
+                border-right: #000000;
+                border-bottom: #000000;          
+                                                 
+            }}
+            QTableWidget::item:focus {{
+                /* Optional: style for the cell currently being edited */
+                 border: 1px solid #5cacee;
+            }}
+
 
         """)
 

@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QDateEdit, QGroupBox, QFormLayout,
     QCheckBox, QProgressBar, QSpacerItem, QSizePolicy, 
     QToolButton, QSpinBox, QFileDialog, QTabWidget, QTableWidget,
-    QSplitter, QHeaderView
+    QSplitter, QHeaderView, QTableWidgetItem
 )
 from PyQt5.QtCore import QDate, Qt, QSize, QDir
 from PyQt5.QtGui import QFont, QTextCursor, QIcon, QColor
@@ -191,22 +191,78 @@ class SearchApp(QWidget):
         splitter = QSplitter(Qt.Horizontal) # Horizontal splitter
 
         # --- "Remove" Table ---
+        remove_vbox = QVBoxLayout()
+        self.remove_table_label = QLabel("Remove Criteria")
+        self.remove_table_label.setAlignment(Qt.AlignCenter)
+        self.remove_table_label.setStyleSheet("""
+            font-size: 13pt;
+            font-weight: bold;
+            color: "#e0e7ef";
+            background: "#5c7da8";
+            border-radius: 6px;
+            padding: 6px 0 6px 0;
+            margin-bottom: 4px;
+            """)
         self.remove_table = QTableWidget()
         self.remove_table.setColumnCount(2)
         self.remove_table.setHorizontalHeaderLabels(["Product", "PL"])
         self.setup_table_appearance(self.remove_table, "Remove", QColor(255, 200, 200)) # Light Red
         self.remove_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        remove_vbox.addWidget(self.remove_table_label)
+        remove_vbox.addWidget(self.remove_table)
+        remove_widget = QWidget()
+        remove_widget.setLayout(remove_vbox)
 
         # --- "Keep" Table ---
+        keep_vbox = QVBoxLayout()
+        self.keep_table_label = QLabel("Keep Criteria")
+        self.keep_table_label.setAlignment(Qt.AlignCenter)
+        self.keep_table_label.setStyleSheet("""
+            font-size: 13pt;
+            font-weight: bold;
+            color: "#e0e7ef";
+            background: "#5c7da8";
+            border-radius: 6px;
+            padding: 6px 0 6px 0;
+            margin-bottom: 4px;
+            """)
         self.keep_table = QTableWidget()
         self.keep_table.setColumnCount(2)
         self.keep_table.setHorizontalHeaderLabels(["Product", "PL"])
         self.setup_table_appearance(self.keep_table, "Keep", QColor(200, 255, 200)) # Light Green
         self.keep_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        keep_vbox.addWidget(self.keep_table_label)
+        keep_vbox.addWidget(self.keep_table)
+        keep_widget = QWidget()
+        keep_widget.setLayout(keep_vbox)
+        
 
+        # --- Add values to Tables ---
+        for name in trimmer.red_keywords_group:
+            row_idx = self.remove_table.rowCount()
+            self.remove_table.insertRow(row_idx)
+            pkg = QTableWidgetItem(name)
+            self.remove_table.setItem(row_idx, 0, pkg)
+            self.remove_table.setItem(row_idx, 1, QTableWidgetItem(' - '))
+        
+        for name in trimmer.green_keywords_complex:
+            row_idx = self.remove_table.rowCount()
+            self.remove_table.insertRow(row_idx)
+            Pl = QTableWidgetItem(name)
+            self.remove_table.setItem(row_idx, 0, QTableWidgetItem(' - '))
+            self.remove_table.setItem(row_idx, 1, Pl)
+
+        for name in trimmer.green_keywords_group:
+            row_idx = self.keep_table.rowCount()
+            self.keep_table.insertRow(row_idx)
+            pkg = QTableWidgetItem(name)
+            self.keep_table.setItem(row_idx, 0, pkg)      
+            self.remove_table.setItem(row_idx, 1, QTableWidgetItem(' - '))  
+
+        QApplication.processEvents()
         # Add tables to the splitter
-        splitter.addWidget(self.remove_table)
-        splitter.addWidget(self.keep_table)
+        splitter.addWidget(remove_widget)
+        splitter.addWidget(keep_widget)
         splitter.setSizes([1, 1])  # Make both tables expand equally
 
         functions_av_group.addWidget(splitter)
@@ -365,6 +421,7 @@ class SearchApp(QWidget):
         MAIN_WINDOW_BACKGROUND = "#e0e7ef" # Slightly bluish gray
         GROUP_BOX_CONTENT_BACKGROUND = "#f8faff" # Very light blue
         BORDER_COLOR = "#5c7da8" # Softer blue border
+        
         TITLE_COLOR = "#2c3e50" # Darker, less saturated blue for title
         PROGRESS_BAR_CHUNK_COLOR = "#3498db" # A nice blue
         BUTTON_BG_COLOR = "#3498db" # A friendly blue for button
@@ -379,6 +436,7 @@ class SearchApp(QWidget):
             SearchApp {{
                 background-color: {MAIN_WINDOW_BACKGROUND};
             }}
+            
             QGroupBox {{
                 background-color: {GROUP_BOX_CONTENT_BACKGROUND};
                 border: 2px solid {BORDER_COLOR};

@@ -5,14 +5,13 @@ from openpyxl.utils.dataframe import dataframe_to_rows # Efficiently write df to
 import re # For case-insensitive "test" matching
 import os
 
-red_keywords_group = ["MEMORY", "SIP", "FPS", "Molded MEMS"] # Case-sensitive as per examples
+red_keywords_group = ["MEMORY", "SIP", "FPS", "Molded MEMS", "3O "] # Case-sensitive as per examples
 green_keywords_group = ["CABGA", "BGA", "SCSP"]              # Case-sensitive
+green_keywords_complex = ["CA "]
 
 def highlight_rows(column_name : str, df : pd.DataFrame):
     
     # Define keywords for red highlighting
-    red_keywords_group = ["MEMORY", "SIP", "FPS", "Molded MEMS"] # Case-sensitive as per examples
-    green_keywords_group = ["CABGA", "BGA", "SCSP"]              # Case-sensitive
 
     # Define fills
     red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid") # Light Red
@@ -30,6 +29,10 @@ def highlight_rows(column_name : str, df : pd.DataFrame):
         # openpyxl rows are 1-based, and ExcelWriter usually writes headers, so add 2
         # (1 for 1-based, 1 for header row)
         excel_row_num = r_idx + 2
+
+        if excel_row_num == 695:
+            pass
+
         current_row_override = False
         cell_value_plant = str(row[column_name]) # Ensure it's a string
 
@@ -58,12 +61,14 @@ def highlight_rows(column_name : str, df : pd.DataFrame):
             elif not remove_activated:
                 for c_idx in range(1, len(df.columns) + 1):
                     cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': green_fill, 'overwrite_previous_for_cell': True})
+            # Override for specific test use cases 
+            if any(re.search(keyword, str(row['Unnamed: 3']), re.IGNORECASE) for keyword in green_keywords_complex):
+                for c_idx in range(1, len(df.columns) + 1): # Apply to all cells in the row
+                    cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': green_fill, 'overwrite_previous_for_cell': True})
 
     return cell_formats_to_apply, df
 
 def remove_rows(column_name : str, df : pd.DataFrame):
-    red_keywords_group = ["MEMORY", "SIP", "FPS", "Molded MEMS"] # Case-sensitive as per examples
-    green_keywords_group = ["CABGA", "BGA", "SCSP"]              # Case-sensitive
 
     # Define fills
     red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid") # Light Red
@@ -103,6 +108,9 @@ def remove_rows(column_name : str, df : pd.DataFrame):
                     pass
                 elif current_row_override:
                     print(f"ERROR! Override in the Test on row {excel_row_num}")
+            if any(re.search(keyword, str(row['Unnamed: 3']), re.IGNORECASE) for keyword in green_keywords_complex):
+                if r_idx in remove_index: 
+                    remove_index.remove(r_idx)
 
     #Flip the remove index and then remove unecessary rows from Dataframe                 
     remove_index.reverse()

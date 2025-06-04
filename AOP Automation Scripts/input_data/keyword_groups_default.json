@@ -1,0 +1,19 @@
+{
+  "red": [
+    "MEMORY",
+    "SIP",
+    "FPS",
+    "Molded MEMS"
+  ],
+  "green": [
+    "BGA",
+    "SCSP",
+    "CABGA"
+  ],
+  "red_complex": [
+    "3O"
+  ],
+  "green_complex": [
+    "CA"
+  ]
+}

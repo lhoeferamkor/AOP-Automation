@@ -15,6 +15,7 @@ import time
 import random
 import subprocess
 import os 
+import json 
 
 import SAP_File_Automation as file_reader
 import remove_specified_rows as trimmer
@@ -189,6 +190,7 @@ class SearchApp(QWidget):
 
         # --- Splitter ---
         splitter = QSplitter(Qt.Horizontal) # Horizontal splitter
+        tables_hbox = QHBoxLayout()
 
         # --- "Remove" Table ---
         remove_vbox = QVBoxLayout()
@@ -208,7 +210,6 @@ class SearchApp(QWidget):
         self.remove_table.setColumnCount(2)
         self.remove_table.setHorizontalHeaderLabels(["Product", "PL"])
         self.setup_table_appearance(self.remove_table, "Remove", QColor(255, 200, 200)) # Light Red
-        self.remove_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.remove_table.cellChanged.connect(self.update_remove_table)
         remove_vbox.addWidget(self.remove_table_button)
         remove_vbox.addWidget(self.remove_table)
@@ -233,30 +234,44 @@ class SearchApp(QWidget):
         self.keep_table.setColumnCount(2)
         self.keep_table.setHorizontalHeaderLabels(["Product", "PL"])
         self.setup_table_appearance(self.keep_table, "Keep", QColor(200, 255, 200)) # Light Green
-        self.keep_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.keep_table.cellChanged.connect(self.update_keep_table)
         keep_vbox.addWidget(self.keep_table_button)
         keep_vbox.addWidget(self.keep_table)
         keep_widget = QWidget()
         keep_widget.setLayout(keep_vbox)
         
+        # --- Add tables to GUI 
+        tables_hbox.addWidget(remove_widget)
+        tables_hbox.addWidget(keep_widget)
+        functions_av_group.addLayout(tables_hbox)
 
         # --- Add values to Tables ---
         for name in trimmer.red_keywords_group:
             self.add_table_row(self.remove_table, name, 0)
+
+        for name in trimmer.red_keywords_complex:
+            self.add_table_row(self.remove_table, name , 1)
+        
+        for name in trimmer.green_keywords_group:
+            self.add_table_row(self.keep_table, name, 0)
         
         for name in trimmer.green_keywords_complex:
             self.add_table_row(self.keep_table, name, 1)
 
-        for name in trimmer.green_keywords_group:
-            self.add_table_row(self.keep_table, name, 0)
 
-        # Add tables to the splitter
-        splitter.addWidget(remove_widget)
-        splitter.addWidget(keep_widget)
-        splitter.setSizes([1, 1])  # Make both tables expand equally
+        # --- Horizontal Button Container 
+        button_hbox = QHBoxLayout()
 
-        functions_av_group.addWidget(splitter)
+        #add save button to the bottom 
+        self.save_tables_button = QPushButton("Save")
+        self.save_tables_button.clicked.connect(self.save_tables)
+        button_hbox.addWidget(self.save_tables_button)
+
+        #Reset to defaults button
+        self.reset_to_default = QPushButton("Default Settings") 
+        self.reset_to_default.clicked.connect(self.reset_table_values)
+        button_hbox.addWidget(self.reset_to_default)
+        functions_av_group.addLayout(button_hbox)
 
         self.advanced_variables_group.setLayout(functions_av_group)
         self.advanced_variables_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -307,9 +322,99 @@ class SearchApp(QWidget):
         if not self.keep_table.item(row, other_col) or not self.keep_table.item(row, other_col).text():
             self.keep_table.setItem(row, other_col, QTableWidgetItem(" - "))
     
+    def reset_table_values(self):
+        self.keep_table.setRowCount(0)
+        self.remove_table.setRowCount(0) 
+        with open("AOP Automation Scripts/input_data/keyword_groups_default.json", "r", encoding="utf-8") as f:
+            loaded = json.load(f)
+            red_keywords_group = loaded["red"]
+            red_keywords_complex = loaded["red_complex"]
+            green_keywords_group = loaded["green"]
+            green_keywords_complex = loaded["green_complex"]
+
+        for name in red_keywords_group:
+            self.add_table_row(self.remove_table, name, 0)
+
+        for name in red_keywords_complex:
+            self.add_table_row(self.remove_table, name , 1)
+        
+        for name in green_keywords_group:
+            self.add_table_row(self.keep_table, name, 0)
+        
+        for name in green_keywords_complex:
+            self.add_table_row(self.keep_table, name, 1)
+
     def save_tables(self):
-        #Save both tables and associated values 
-        pass
+        keyword_dict = {}
+        red = []
+        red_complex = []
+        green = []
+        green_complex = []
+
+        #Things to remove
+        remove = {
+            'keep_table' : [],
+            'remove_table' : []
+        }
+
+        for row in range(self.keep_table.rowCount()):
+            text = self.keep_table.item(row, 0).text()
+            if text != " - " and text != "": 
+                green.append(text)
+            elif text == "":
+                remove['keep_table'].append(row)
+
+        for row in range(self.keep_table.rowCount()):
+            text = self.keep_table.item(row, 1).text()
+            if text != " - " and text != "": 
+                green_complex.append(text)
+            elif text == "":
+                remove['keep_table'].append(row)
+
+        for row in range(self.remove_table.rowCount()):
+            text = self.remove_table.item(row, 0).text()
+            if text != " - " and text != "": 
+                red.append(text)
+            elif text == "":
+                remove['remove_table'].append(row)
+
+        for row in range(self.remove_table.rowCount()):
+            text = self.remove_table.item(row, 1).text()
+            if text != " - " and text != "": 
+                red_complex.append(text)
+            elif text == "":
+                remove['remove_table'].append(row)
+
+        remove = dict(sorted(remove.items(), key=lambda item: len(item[1]), reverse=True))
+        for k, v in remove.items():
+            if k == 'remove_table':
+                for row in v:
+                    self.remove_table.removeRow(int(row))
+            if k == 'keep_table':
+                for row in v:
+                    self.keep_table.removeRow(int(row))
+
+        keyword_dict = {
+            "red": red,
+            "green": green,
+            "red_complex" : red_complex,
+            "green_complex": green_complex
+        }
+        try: 
+            with open("AOP Automation Scripts/input_data/keyword_groups.json", "w", encoding="utf-8") as f:
+                json.dump(keyword_dict, f, indent=2)
+                
+        except Exception as e:
+            self.results_output.append("")
+            self.results_output.insertHtml('<b><font color = "red"> ERROR! Could not download keyword_groups.json </font></b>')
+            self.results_output.append("")
+            self.results_output.insertPlainText(f"{e}")
+            QApplication.processEvents()
+
+        
+    def delete_selected_remove_row(self):
+        row = self.remove_table.currentRow()
+        if row >=0: self.remove_table.removeRow(row)
 
     def setup_table_appearance(self, table: QTableWidget, title: str, header_bg_color: QColor):
         """Helper function to set up common appearance for tables."""

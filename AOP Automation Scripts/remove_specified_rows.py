@@ -4,10 +4,19 @@ from openpyxl.styles import PatternFill, Font
 from openpyxl.utils.dataframe import dataframe_to_rows # Efficiently write df to openpyxl
 import re # For case-insensitive "test" matching
 import os
+import json
 
-red_keywords_group = ["MEMORY", "SIP", "FPS", "Molded MEMS", "3O "] # Case-sensitive as per examples
-green_keywords_group = ["CABGA", "BGA", "SCSP"]              # Case-sensitive
-green_keywords_complex = ["CA "]
+with open("AOP Automation Scripts/input_data/keyword_groups.json", "r", encoding="utf-8") as f:
+    loaded = json.load(f)
+    red_keywords_group = loaded["red"]
+    red_keywords_complex = loaded["red_complex"]
+    green_keywords_group = loaded["green"]
+    green_keywords_complex = loaded["green_complex"]
+
+
+#red_keywords_group = ["MEMORY", "SIP", "FPS", "Molded MEMS", "3O "] # Case-sensitive as per examples
+#green_keywords_group = ["CABGA", "BGA", "SCSP"]              # Case-sensitive
+#green_keywords_complex = ["CA "]
 
 def highlight_rows(column_name : str, df : pd.DataFrame):
     
@@ -45,7 +54,7 @@ def highlight_rows(column_name : str, df : pd.DataFrame):
             remove_activated = True
             current_row_override = True
             for c_idx in range(1, len(df.columns) + 1): # Apply to all cells in the row
-                cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': red_fill})
+                cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': red_fill, 'overwrite_previous_for_cell': True})
 
         #Green Rule
         elif is_green:
@@ -57,14 +66,17 @@ def highlight_rows(column_name : str, df : pd.DataFrame):
         if re.search(r'test', cell_value_plant, re.IGNORECASE):
             if remove_activated and not current_row_override:
                 for c_idx in range(1, len(df.columns) + 1):
-                    cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': yellow_fill, 'overwrite_previous_for_cell': True})
+                    cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': yellow_fill})
             elif not remove_activated:
                 for c_idx in range(1, len(df.columns) + 1):
-                    cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': green_fill, 'overwrite_previous_for_cell': True})
+                    cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': green_fill})
             # Override for specific test use cases 
             if any(re.search(keyword, str(row['Unnamed: 3']), re.IGNORECASE) for keyword in green_keywords_complex):
                 for c_idx in range(1, len(df.columns) + 1): # Apply to all cells in the row
-                    cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': green_fill, 'overwrite_previous_for_cell': True})
+                    cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': green_fill})
+            if any(re.search(keyword, str(row['Unnamed: 3']), re.IGNORECASE) for keyword in red_keywords_complex):
+                for c_idx in range(1, len(df.columns) + 1): # Apply to all cells in the row
+                    cell_formats_to_apply.append({'row': excel_row_num, 'column': c_idx, 'fill': red_fill, 'overwrite_previous_for_cell': True})
 
     return cell_formats_to_apply, df
 
@@ -109,6 +121,9 @@ def remove_rows(column_name : str, df : pd.DataFrame):
                 elif current_row_override:
                     print(f"ERROR! Override in the Test on row {excel_row_num}")
             if any(re.search(keyword, str(row['Unnamed: 3']), re.IGNORECASE) for keyword in green_keywords_complex):
+                if r_idx in remove_index: 
+                    remove_index.remove(r_idx)
+            if any(re.search(keyword, str(row['Unnamed: 3']), re.IGNORECASE) for keyword in red_keywords_complex):
                 if r_idx in remove_index: 
                     remove_index.remove(r_idx)
 

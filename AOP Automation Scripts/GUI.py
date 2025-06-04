@@ -192,9 +192,8 @@ class SearchApp(QWidget):
 
         # --- "Remove" Table ---
         remove_vbox = QVBoxLayout()
-        self.remove_table_label = QLabel("Remove Criteria")
-        self.remove_table_label.setAlignment(Qt.AlignCenter)
-        self.remove_table_label.setStyleSheet("""
+        self.remove_table_button = QPushButton("Remove Criteria")
+        self.remove_table_button.setStyleSheet("""
             font-size: 13pt;
             font-weight: bold;
             color: "#e0e7ef";
@@ -203,21 +202,23 @@ class SearchApp(QWidget):
             padding: 6px 0 6px 0;
             margin-bottom: 4px;
             """)
+        self.remove_table_button.clicked.connect(self.empty_rtable_row)
+
         self.remove_table = QTableWidget()
         self.remove_table.setColumnCount(2)
         self.remove_table.setHorizontalHeaderLabels(["Product", "PL"])
         self.setup_table_appearance(self.remove_table, "Remove", QColor(255, 200, 200)) # Light Red
         self.remove_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        remove_vbox.addWidget(self.remove_table_label)
+        self.remove_table.cellChanged.connect(self.update_remove_table)
+        remove_vbox.addWidget(self.remove_table_button)
         remove_vbox.addWidget(self.remove_table)
         remove_widget = QWidget()
         remove_widget.setLayout(remove_vbox)
 
         # --- "Keep" Table ---
         keep_vbox = QVBoxLayout()
-        self.keep_table_label = QLabel("Keep Criteria")
-        self.keep_table_label.setAlignment(Qt.AlignCenter)
-        self.keep_table_label.setStyleSheet("""
+        self.keep_table_button = QPushButton("Keep Criteria")
+        self.keep_table_button.setStyleSheet("""
             font-size: 13pt;
             font-weight: bold;
             color: "#e0e7ef";
@@ -226,12 +227,15 @@ class SearchApp(QWidget):
             padding: 6px 0 6px 0;
             margin-bottom: 4px;
             """)
+        self.keep_table_button.clicked.connect(self.empty_ktable_row)
+
         self.keep_table = QTableWidget()
         self.keep_table.setColumnCount(2)
         self.keep_table.setHorizontalHeaderLabels(["Product", "PL"])
         self.setup_table_appearance(self.keep_table, "Keep", QColor(200, 255, 200)) # Light Green
         self.keep_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        keep_vbox.addWidget(self.keep_table_label)
+        self.keep_table.cellChanged.connect(self.update_keep_table)
+        keep_vbox.addWidget(self.keep_table_button)
         keep_vbox.addWidget(self.keep_table)
         keep_widget = QWidget()
         keep_widget.setLayout(keep_vbox)
@@ -239,27 +243,14 @@ class SearchApp(QWidget):
 
         # --- Add values to Tables ---
         for name in trimmer.red_keywords_group:
-            row_idx = self.remove_table.rowCount()
-            self.remove_table.insertRow(row_idx)
-            pkg = QTableWidgetItem(name)
-            self.remove_table.setItem(row_idx, 0, pkg)
-            self.remove_table.setItem(row_idx, 1, QTableWidgetItem(' - '))
+            self.add_table_row(self.remove_table, name, 0)
         
         for name in trimmer.green_keywords_complex:
-            row_idx = self.remove_table.rowCount()
-            self.remove_table.insertRow(row_idx)
-            Pl = QTableWidgetItem(name)
-            self.remove_table.setItem(row_idx, 0, QTableWidgetItem(' - '))
-            self.remove_table.setItem(row_idx, 1, Pl)
+            self.add_table_row(self.keep_table, name, 1)
 
         for name in trimmer.green_keywords_group:
-            row_idx = self.keep_table.rowCount()
-            self.keep_table.insertRow(row_idx)
-            pkg = QTableWidgetItem(name)
-            self.keep_table.setItem(row_idx, 0, pkg)      
-            self.remove_table.setItem(row_idx, 1, QTableWidgetItem(' - '))  
+            self.add_table_row(self.keep_table, name, 0)
 
-        QApplication.processEvents()
         # Add tables to the splitter
         splitter.addWidget(remove_widget)
         splitter.addWidget(keep_widget)
@@ -279,6 +270,46 @@ class SearchApp(QWidget):
         window_layout.addWidget(self.tabs)
         self.setLayout(window_layout)
         self.show()
+
+    def add_table_row(self, table : QTableWidget, text : str, pos : int):
+        row_idx = table.rowCount()
+        table.insertRow(row_idx)
+        text_item = QTableWidgetItem(text)
+        dash_item = QTableWidgetItem(" - ")
+        text_item.setTextAlignment(Qt.AlignCenter)
+        dash_item.setTextAlignment(Qt.AlignCenter)
+        table.setItem(row_idx, pos, text_item)
+        table.setItem(row_idx, abs(pos-1), dash_item)
+
+    def empty_rtable_row(self):
+        row_idx = self.remove_table.rowCount()
+        self.remove_table.insertRow(row_idx)
+        # Optionally, add empty QTableWidgetItems to make the cells editable
+        self.remove_table.setItem(row_idx, 0, QTableWidgetItem(""))
+        self.remove_table.setItem(row_idx, 1, QTableWidgetItem(""))
+
+    def empty_ktable_row(self):
+        row_idx = self.keep_table.rowCount()
+        self.keep_table.insertRow(row_idx)
+        # Optionally, add empty QTableWidgetItems to make the cells editable
+        self.keep_table.setItem(row_idx, 0, QTableWidgetItem(""))
+        self.keep_table.setItem(row_idx, 1, QTableWidgetItem(""))
+
+    def update_remove_table(self, row, column):
+        self.remove_table.item(row, column).setTextAlignment(Qt.AlignCenter)
+        other_col = abs(column - 1)
+        if not self.remove_table.item(row, other_col) or not self.remove_table.item(row, other_col).text():
+            self.remove_table.setItem(row, other_col, QTableWidgetItem(" - "))
+
+    def update_keep_table(self, row, column):
+        self.keep_table.item(row, column).setTextAlignment(Qt.AlignCenter)
+        other_col = abs(column - 1)
+        if not self.keep_table.item(row, other_col) or not self.keep_table.item(row, other_col).text():
+            self.keep_table.setItem(row, other_col, QTableWidgetItem(" - "))
+    
+    def save_tables(self):
+        #Save both tables and associated values 
+        pass
 
     def setup_table_appearance(self, table: QTableWidget, title: str, header_bg_color: QColor):
         """Helper function to set up common appearance for tables."""

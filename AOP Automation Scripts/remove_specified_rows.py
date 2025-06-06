@@ -152,18 +152,18 @@ def modify_headers(df : pd.DataFrame) -> pd.DataFrame:
 def pivot_table(df : pd.DataFrame, output_filename : str):
     df.iloc[:, 4:] = df.iloc[:, 4:].apply(pd.to_numeric, errors='coerce').fillna(0)
     
-    #aggregate_vals = [col for col in df.columns[4:] if pd.api.types.is_numeric_dtype(df[col])]
+    aggregate_vals = [col for col in df.columns[4:] if pd.api.types.is_numeric_dtype(df[col])]
 
     pivot_df = pd.pivot_table(
         df,
-        values='JUN Demand',      # What to aggregate
+        values=aggregate_vals,      # What to aggregate
         index=' Legal Name',      # Rows of the pivot table
         aggfunc='sum',       # How to aggregate (sum, mean, count, etc.)
         fill_value=0         # Value to fill for missing combinations
     )
     try:
         with pd.ExcelWriter(output_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            pivot_df.to_excel(writer, sheet_name='Pivot Table', index=False)
+            pivot_df.to_excel(writer, sheet_name='Pivot Table')
 
             # --- 5. Apply Styling (Optional) ---
             workbook = writer.book # Get the openpyxl workbook object

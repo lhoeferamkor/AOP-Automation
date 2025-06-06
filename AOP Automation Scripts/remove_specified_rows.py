@@ -133,6 +133,17 @@ def remove_rows(column_name : str, df : pd.DataFrame):
 
     return remove_index, df 
 
+def modify_headers(df : pd.DataFrame) -> pd.DataFrame:
+    df.columns = [''.join(col.split(' ')[0]) for col in df.columns]
+    column_names = []
+    for i in range(df.shape[1]):
+        column_names.append(df.columns[i] + " " + df.iloc[0, i])
+    df.columns = column_names
+    
+    return df.drop(index=0)
+    
+    
+
 
 def apply_conditional_formatting(input_excel_path, output_excel_path, task='remove', column_name="Unnamed: 2", sheet_name="Sheet1"):
     try:
@@ -189,6 +200,8 @@ def apply_conditional_formatting(input_excel_path, output_excel_path, task='remo
         remove_index, remove_df = remove_rows(column_name, df)
         remove_df.iloc[0,0:4]=['Date', 'Legal Name', 'Pkg', 'PDL']
         remove_df.rename(columns={'Unnamed: 0' : ' ', 'Unnamed: 1' : ' ', 'Unnamed: 2' : ' ', 'Unnamed: 3' : ' '}, inplace=True)
+        remove_df = modify_headers(remove_df)
+
         try:
             if file_exists:
                 writer = pd.ExcelWriter(output_excel_path, engine='openpyxl', mode='a', if_sheet_exists='replace')

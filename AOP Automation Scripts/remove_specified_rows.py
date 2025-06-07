@@ -6,7 +6,7 @@ from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.styles.numbers import FORMAT_CURRENCY_USD_SIMPLE, FORMAT_NUMBER_COMMA_SEPARATED1
 from openpyxl.formatting.rule import CellIsRule
 from openpyxl.utils import get_column_letter
-
+import xlsxwriter
 import re # For case-insensitive "test" matching
 import os
 import json
@@ -151,64 +151,25 @@ def modify_headers(df : pd.DataFrame) -> pd.DataFrame:
     
 def pivot_table(df : pd.DataFrame, output_filename : str):
     df.iloc[:, 4:] = df.iloc[:, 4:].apply(pd.to_numeric, errors='coerce').fillna(0)
-    
     aggregate_vals = [col for col in df.columns[4:] if pd.api.types.is_numeric_dtype(df[col])]
 
-    pivot_df = pd.pivot_table(
-        df,
-        values=aggregate_vals,      # What to aggregate
-        index=' Legal Name',      # Rows of the pivot table
-        aggfunc='sum',       # How to aggregate (sum, mean, count, etc.)
-        fill_value=0         # Value to fill for missing combinations
+    pivot_table = pd.pivot_table(
+        df, 
+        values = 'JUN Demand',
+        index=' Legal Name',
+        aggfunc='sum'
     )
     try:
-        with pd.ExcelWriter(output_filename, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            pivot_df.to_excel(writer, sheet_name='Pivot Table')
-
-            # --- 5. Apply Styling (Optional) ---
-            workbook = writer.book # Get the openpyxl workbook object
-            worksheet_pivot = workbook['Pivot Table'] # Get the specific sheet
-
-            # --- Define Styles ---
-            header_font = Font(bold=True, color="000000") # Black font
-            header_fill = PatternFill(start_color="D7E4BC", end_color="D7E4BC", fill_type="solid") # Light green
-            thin_border_side = Side(border_style="thin", color="000000")
-            header_border = Border(top=thin_border_side, left=thin_border_side, right=thin_border_side, bottom=thin_border_side)
-            header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=False)
-
-            # --- Apply Header Styling ---
-            # Pandas writes the index names and column names in the first row.
-            # Index names are in columns 1 to n_levels
-            # Column names start after index columns
-            n_levels = pivot_df.index.nlevels
-            for col_idx in range(1, worksheet_pivot.max_column + 1):
-                cell = worksheet_pivot.cell(row=1, column=col_idx)
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.border = header_border
-                cell.alignment = header_alignment
-            
-            # Column Dimension Resizing 
-            worksheet_pivot.column_dimensions[get_column_letter(1)].width = 18 # Region
-            worksheet_pivot.column_dimensions[get_column_letter(2)].width = 18 # Sales Rep
-
-            red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid") # Light red
-            dark_red_font = Font(color="9C0006") # Dark red font
-
-            # Rule: cell value > 400
-            conditional_rule = CellIsRule(operator='greaterThan', formula=['0'], stopIfTrue=True, font=dark_red_font, fill=red_fill)
-            worksheet_pivot.conditional_formatting.add('$D3:$Z100', conditional_rule)
-
-
-       
+        writer = pd.ExcelWriter(output_filename, engine='openpyxl', mode='a', if_sheet_exists='replace')
+        pivot_table.to_excel(writer, sheet_name='Pivot Table', index=True)
+        print('Successful pivot table')
 
     except ImportError:
         print("openpyxl is not installed. Styling cannot be applied this way.")
         print("Please install it: pip install openpyxl pandas")
         # Fallback to basic Excel writing without advanced styling (Pandas default if openpyxl not specified as engine)
         with pd.ExcelWriter(output_filename) as writer: # engine defaults to openpyxl if available
-            df.to_excel(writer, sheet_name='Raw_Data', index=False)
-            pivot_df.to_excel(writer, sheet_name='Pivot Table', index=True)
+            df.to_excel(writer, sheet_name='Pivot Table', index=True)
         print(f"\nExcel file '{output_filename}' created successfully (basic).")
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -233,6 +194,8 @@ def apply_conditional_formatting(input_excel_path, output_excel_path, task='remo
 
     # Determine if file exists
     file_exists = os.path.exists(output_excel_path)
+        
+
 
     if task == 'both':
         print("Running Both Commands")
@@ -272,7 +235,7 @@ def apply_conditional_formatting(input_excel_path, output_excel_path, task='remo
         remove_df.iloc[0,0:4]=['Date', 'Legal Name', 'Pkg', 'PDL']
         remove_df.rename(columns={'Unnamed: 0' : ' ', 'Unnamed: 1' : ' ', 'Unnamed: 2' : ' ', 'Unnamed: 3' : ' '}, inplace=True)
         remove_df = modify_headers(remove_df)
-
+        wb = load_workbook(output_excel_path)
         try:
             if file_exists:
                 writer = pd.ExcelWriter(output_excel_path, engine='openpyxl', mode='a', if_sheet_exists='replace')
@@ -285,13 +248,14 @@ def apply_conditional_formatting(input_excel_path, output_excel_path, task='remo
             print(f"Error writing Excel file: {e}")
             import traceback
             traceback.print_exc()
-        
+
         try: 
             pivot_table(remove_df, output_excel_path)
         except Exception as e:
             print(f"Error writing Pivot Table: {e}")
             import traceback
             traceback.print_exc()
+        wb.save(output_excel_path)
 
     if task == 'highlight':
         print("running Highlight Command")

@@ -513,7 +513,6 @@ class SearchApp(QWidget):
                     self.results_output.insertHtml('<b><font color = "green"> DONE </font></b>')
                     self.results_output.append("")
                     QApplication.processEvents()
-                    
 
                 if task_key == 'highlight' or task_key == 'remove':
                     if task_key == 'highlight': self.results_output.insertHtml(f'<b> Highlighting Rows ... </b>')
